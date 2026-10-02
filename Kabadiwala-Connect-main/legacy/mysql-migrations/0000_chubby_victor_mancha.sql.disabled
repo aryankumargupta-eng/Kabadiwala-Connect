@@ -1,0 +1,95 @@
+CREATE TABLE `collectors` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`collectorId` varchar(32) NOT NULL,
+	`displayName` varchar(120) NOT NULL,
+	`preferredLanguage` varchar(32) NOT NULL DEFAULT 'मराठी',
+	`operatingLocation` varchar(180) NOT NULL,
+	`userId` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `collectors_id` PRIMARY KEY(`id`),
+	CONSTRAINT `collectors_collectorId_unique` UNIQUE(`collectorId`)
+);
+--> statement-breakpoint
+CREATE TABLE `handovers` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`handoverReference` varchar(48) NOT NULL,
+	`lotId` varchar(32) NOT NULL,
+	`recyclerCode` varchar(32) NOT NULL,
+	`photoReference` text,
+	`recordedWeight` decimal(10,2),
+	`gpsLocation` varchar(180),
+	`handoverCode` varchar(16),
+	`recyclerConfirmed` int NOT NULL DEFAULT 0,
+	`paymentStatus` enum('pending','cash_paid','digital_paid') NOT NULL DEFAULT 'pending',
+	`transactionStatus` enum('pending','confirmed','completed') NOT NULL DEFAULT 'pending',
+	`handedOverAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `handovers_id` PRIMARY KEY(`id`),
+	CONSTRAINT `handovers_handoverReference_unique` UNIQUE(`handoverReference`)
+);
+--> statement-breakpoint
+CREATE TABLE `material_lots` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`lotId` varchar(32) NOT NULL,
+	`collectorId` varchar(32) NOT NULL,
+	`category` varchar(80) NOT NULL,
+	`subcategory` varchar(120),
+	`description` text,
+	`photoReference` text,
+	`approximateWeight` decimal(10,2) NOT NULL,
+	`condition` varchar(60) NOT NULL DEFAULT 'mixed',
+	`sourceType` varchar(80) NOT NULL DEFAULT 'informal_collection',
+	`collectionLocation` varchar(180) NOT NULL,
+	`estimatedValue` decimal(12,2),
+	`quotedPrice` decimal(12,2),
+	`finalSaleValue` decimal(12,2),
+	`status` enum('draft','matched','handover_pending','completed','cancelled') NOT NULL DEFAULT 'draft',
+	`collectedAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `material_lots_id` PRIMARY KEY(`id`),
+	CONSTRAINT `material_lots_lotId_unique` UNIQUE(`lotId`)
+);
+--> statement-breakpoint
+CREATE TABLE `price_observations` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`category` varchar(80) NOT NULL,
+	`location` varchar(180) NOT NULL,
+	`observedAt` timestamp NOT NULL DEFAULT (now()),
+	`buyingPrice` decimal(12,2) NOT NULL,
+	`quotedPrice` decimal(12,2),
+	`unit` varchar(30) NOT NULL DEFAULT 'kg',
+	`recyclerCode` varchar(32),
+	`source` varchar(80) NOT NULL DEFAULT 'field_quote',
+	CONSTRAINT `price_observations_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `recyclers` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`recyclerCode` varchar(32) NOT NULL,
+	`name` varchar(160) NOT NULL,
+	`facilityLocation` varchar(180) NOT NULL,
+	`materialsAccepted` text NOT NULL,
+	`authorizationDetails` varchar(180),
+	`authorizationStatus` enum('authorized','pending','expired') NOT NULL DEFAULT 'pending',
+	`contactDetails` varchar(180),
+	`offeredRates` text,
+	`pickupAvailability` varchar(120),
+	`serviceArea` varchar(180),
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `recyclers_id` PRIMARY KEY(`id`),
+	CONSTRAINT `recyclers_recyclerCode_unique` UNIQUE(`recyclerCode`)
+);
+--> statement-breakpoint
+CREATE TABLE `users` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`openId` varchar(64) NOT NULL,
+	`name` text,
+	`email` varchar(320),
+	`loginMethod` varchar(64),
+	`role` enum('user','admin') NOT NULL DEFAULT 'user',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`lastSignedIn` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_openId_unique` UNIQUE(`openId`)
+);

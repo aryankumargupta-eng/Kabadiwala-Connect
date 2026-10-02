@@ -1,0 +1,11 @@
+{
+  "name": "Kabadiwala Connect",
+  "short_name": "Kabadiwala",
+  "description": "A fairer, safer route from informal collection to formal e-waste recycling.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f4",
+  "theme_color": "#0e2c20",
+  "lang": "en-IN",
+  "icons": []
+}

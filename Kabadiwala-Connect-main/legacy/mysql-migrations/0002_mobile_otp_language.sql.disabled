@@ -1,0 +1,4 @@
+ALTER TABLE `users` ADD COLUMN `phone` varchar(20);
+ALTER TABLE `users` ADD COLUMN `phoneVerifiedAt` timestamp NULL;
+ALTER TABLE `users` ADD COLUMN `preferredLanguage` varchar(32) NOT NULL DEFAULT 'EN';
+CREATE UNIQUE INDEX `users_phone_unique` ON `users` (`phone`);
