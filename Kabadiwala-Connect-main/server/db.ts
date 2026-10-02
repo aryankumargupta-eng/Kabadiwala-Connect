@@ -1,33 +1,26 @@
 import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { drizzle } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 import { collectors, handovers, InsertUser, InsertRecoveryZone, materialLots, priceObservations, recoveryZones, recyclers, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 const memoryRecoveryZones = new Map<string, InsertRecoveryZone & { id: number }>();
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _sqlite: Database.Database | null = null;
 
-function getDatabasePath() {
-  const configured = process.env.DATABASE_URL || ENV.databaseUrl || "file:./data/kabadiwala.db";
-  const rawPath = configured.startsWith("file:") ? configured.slice(5) : configured;
-  return resolve(process.cwd(), rawPath);
-}
-
-// Lazily create a local SQLite database. No MySQL/Docker service is required.
 export async function getDb() {
   if (_db) return _db;
 
   try {
-    const databasePath = getDatabasePath();
-    mkdirSync(dirname(databasePath), { recursive: true });
-    _sqlite = new Database(databasePath);
-    _sqlite.pragma("journal_mode = WAL");
-    _sqlite.pragma("foreign_keys = ON");
-    _db = drizzle(_sqlite);
+    const url = process.env.DATABASE_URL || ENV.databaseUrl || "file:./data/kabadiwala.db";
+    const authToken = process.env.DATABASE_AUTH_TOKEN;
+
+    const client = createClient({
+      url,
+      authToken,
+    });
+
+    _db = drizzle(client);
   } catch (error) {
     console.warn("[Database] Failed to open SQLite database:", error);
     _db = null;
