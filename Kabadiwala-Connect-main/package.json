@@ -16,6 +16,7 @@
     "predev": "drizzle-kit push"
   },
   "dependencies": {
+    "@libsql/client": "^0.14.0",
     "@aws-sdk/client-s3": "^3.693.0",
     "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@hookform/resolvers": "^5.2.2",
@@ -84,6 +85,7 @@
     "wouter": "^3.3.5",
     "zod": "^4.1.12",
     "twilio": "^5.10.3"
+
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
