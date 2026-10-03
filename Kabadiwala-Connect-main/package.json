@@ -12,8 +12,7 @@
     "db:push": "drizzle-kit push",
     "typecheck": "tsc --noEmit",
     "lint": "prettier --check .",
-    "tests": "vitest run",
-    "predev": "drizzle-kit push"
+    "tests": "vitest run"
   },
   "dependencies": {
     "@libsql/client": "^0.14.0",
@@ -66,7 +65,6 @@
     "jose": "6.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.453.0",
-    "better-sqlite3": "^12.4.1",
     "nanoid": "^5.1.5",
     "next-themes": "^0.4.6",
     "react": "^19.2.1",

@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 export type RawZone = {
   externalRef: string;
@@ -23,8 +22,7 @@ export async function fetchMunicipalZones(): Promise<RawZone[]> {
   // TODO: replace this stub with the live MCD / Delhi municipal data feed when a public API or
   // official export becomes available; until then we are reading a local fixture refreshed from
   // data.gov.in / RTI exports so the app has a realistic ingestion contract.
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const fixturePath = path.join(__dirname, "fixtures", "mcd-gvp.json");
+  const fixturePath = path.resolve(process.cwd(), "server", "ingestion", "fixtures", "mcd-gvp.json");
   const file = await readFile(fixturePath, "utf8");
   const data = JSON.parse(file) as RawZone[];
   return data.map((zone) => ({

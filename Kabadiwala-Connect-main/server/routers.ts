@@ -28,6 +28,16 @@ const requireAuth = middleware(({ ctx, next }) => {
 
 const protectedProcedure = publicProcedure.use(requireAuth);
 
+async function withDatabaseError<T>(operation: string, message: string, action: () => Promise<T>): Promise<T> {
+  try {
+    return await action();
+  } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    console.error(`[${operation}] DB error:`, error);
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message, cause: error });
+  }
+}
+
 function setSessionCookie(ctx: TrpcContext, token: string, maxAgeSeconds: number) {
   const options = getSessionCookieOptions(ctx.req);
   ctx.res.cookie(COOKIE_NAME, token, { ...options, maxAge: maxAgeSeconds * 1000 });
@@ -35,21 +45,27 @@ function setSessionCookie(ctx: TrpcContext, token: string, maxAgeSeconds: number
 
 const recoveryZonesRouter = router({
   list: publicProcedure.input(recoveryZoneListSchema.optional()).query(async ({ input }) => {
-    return listRecoveryZones(input ?? {});
+    return withDatabaseError("recovery-zone.list", "Unable to load recovery zones.", () =>
+      listRecoveryZones(input ?? {}),
+    );
   }),
   getById: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
-    return getRecoveryZoneById(input.id);
+    return withDatabaseError("recovery-zone.getById", "Unable to load the recovery zone.", () =>
+      getRecoveryZoneById(input.id),
+    );
   }),
   create: protectedProcedure.input(recoveryZoneCreateSchema).mutation(async ({ input }) => {
-    return createRecoveryZone({
-      ...input,
-      latitude: input.latitude.toString(),
-      longitude: input.longitude.toString(),
-      externalRef: input.externalRef ?? `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      source: input.source ?? "manual",
-      status: input.status ?? "active",
-      lastReportedAt: input.lastReportedAt ?? new Date(),
-    });
+    return withDatabaseError("recovery-zone.create", "Unable to create the recovery zone.", () =>
+      createRecoveryZone({
+        ...input,
+        latitude: input.latitude.toString(),
+        longitude: input.longitude.toString(),
+        externalRef: input.externalRef ?? `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        source: input.source ?? "manual",
+        status: input.status ?? "active",
+        lastReportedAt: input.lastReportedAt ?? new Date(),
+      }),
+    );
   }),
   runIngestion: protectedProcedure.mutation(async ({ ctx }) => {
     if (!ctx.user || ctx.user.role !== "admin") {
@@ -61,35 +77,37 @@ const recoveryZonesRouter = router({
       fetchSatelliteFlaggedZones(),
     ]);
 
-    const municipalResults = await Promise.all(municipal.map((zone) => upsertRecoveryZone({
-      ...zone,
-      latitude: zone.latitude.toString(),
-      longitude: zone.longitude.toString(),
-      status: zone.status ?? "active",
-      source: "municipal",
-      confidence: zone.confidence ?? null,
-      notes: zone.notes ?? null,
-      lastReportedAt: new Date(zone.lastReportedAt),
-      externalRef: zone.externalRef,
-    })));
+    return withDatabaseError("recovery-zone.runIngestion", "Unable to save ingested recovery zones.", async () => {
+      const municipalResults = await Promise.all(municipal.map((zone) => upsertRecoveryZone({
+        ...zone,
+        latitude: zone.latitude.toString(),
+        longitude: zone.longitude.toString(),
+        status: zone.status ?? "active",
+        source: "municipal",
+        confidence: zone.confidence ?? null,
+        notes: zone.notes ?? null,
+        lastReportedAt: new Date(zone.lastReportedAt),
+        externalRef: zone.externalRef,
+      })));
 
-    const satelliteResults = await Promise.all(satellite.map((zone) => upsertRecoveryZone({
-      ...zone,
-      latitude: zone.latitude.toString(),
-      longitude: zone.longitude.toString(),
-      status: "unverified",
-      source: "satellite",
-      confidence: zone.confidence ?? null,
-      notes: zone.notes ?? null,
-      lastReportedAt: new Date(zone.lastReportedAt),
-      externalRef: zone.externalRef,
-    })));
+      const satelliteResults = await Promise.all(satellite.map((zone) => upsertRecoveryZone({
+        ...zone,
+        latitude: zone.latitude.toString(),
+        longitude: zone.longitude.toString(),
+        status: "unverified",
+        source: "satellite",
+        confidence: zone.confidence ?? null,
+        notes: zone.notes ?? null,
+        lastReportedAt: new Date(zone.lastReportedAt),
+        externalRef: zone.externalRef,
+      })));
 
-    return {
-      municipal: municipalResults.length,
-      satellite: satelliteResults.length,
-      total: municipalResults.length + satelliteResults.length,
-    };
+      return {
+        municipal: municipalResults.length,
+        satellite: satelliteResults.length,
+        total: municipalResults.length + satelliteResults.length,
+      };
+    });
   }),
 });
 
@@ -120,19 +138,17 @@ export const appRouter = router({
       } catch {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Enter a valid mobile number with country code." });
       }
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database is not configured." });
-
-      const existingEmail = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-      if (existingEmail.length) throw new TRPCError({ code: "CONFLICT", message: "An account with this email already exists." });
-      const existingPhone = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
-      if (existingPhone.length) throw new TRPCError({ code: "CONFLICT", message: "An account with this mobile number already exists." });
-
       const passwordHash = await hashPassword(input.password);
       const openId = `local-${randomUUID()}`;
-      let created;
-      try {
-        [created] = await db.insert(users).values({
+      const created = await withDatabaseError("auth.signup", "Signup failed", async () => {
+        const db = await getDb();
+
+        const existingEmail = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        if (existingEmail.length) throw new TRPCError({ code: "CONFLICT", message: "An account with this email already exists." });
+        const existingPhone = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
+        if (existingPhone.length) throw new TRPCError({ code: "CONFLICT", message: "An account with this mobile number already exists." });
+
+        const [created] = await db.insert(users).values({
           openId,
           name: input.name,
           email,
@@ -148,13 +164,14 @@ export const appRouter = router({
           loginMethod: users.loginMethod, role: users.role, createdAt: users.createdAt,
           updatedAt: users.updatedAt, lastSignedIn: users.lastSignedIn,
         });
-      } catch {
-        throw new TRPCError({ code: "CONFLICT", message: "Unable to create the account because these details are already in use." });
-      }
 
-      if (!created) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unable to create account." });
+        if (!created) throw new Error("Signup insert returned no user");
+        return created;
+      });
 
-      const session = await createSession(created.id, input.remember);
+      const session = await withDatabaseError("auth.signup", "Signup failed", () =>
+        createSession(created.id, input.remember),
+      );
       setSessionCookie(ctx, session.token, Math.round((session.expiresAt.getTime() - Date.now()) / 1000));
       return { user: created, success: true } as const;
     }),

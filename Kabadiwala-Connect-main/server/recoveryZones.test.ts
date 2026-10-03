@@ -4,9 +4,15 @@ import type { TrpcContext } from "./_core/context";
 import { fetchMunicipalZones } from "./ingestion/municipal";
 import { fetchSatelliteFlaggedZones } from "./ingestion/satellite";
 
-function publicContext(): TrpcContext {
+function authenticatedContext(): TrpcContext {
   return {
-    user: null,
+    user: {
+      id: 1,
+      openId: "recovery-zone-test-user",
+      name: "Recovery Zone Test",
+      email: "recovery-zone-test@example.com",
+      role: "user",
+    },
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: {} as TrpcContext["res"],
   };
@@ -14,7 +20,7 @@ function publicContext(): TrpcContext {
 
 describe("recovery zones router", () => {
   it("filters by source and status and creates a manual recovery zone", async () => {
-    const caller = appRouter.createCaller(publicContext());
+    const caller = appRouter.createCaller(authenticatedContext());
     const externalRef = `manual-router-${Date.now()}`;
 
     const created = await caller.recoveryZones.create({

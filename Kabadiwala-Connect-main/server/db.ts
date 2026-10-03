@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
+import * as schema from "../drizzle/schema";
 import { collectors, handovers, InsertUser, InsertRecoveryZone, materialLots, priceObservations, recoveryZones, recyclers, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -11,20 +12,16 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (_db) return _db;
 
-  try {
-    const url = process.env.DATABASE_URL || ENV.databaseUrl || "file:./data/kabadiwala.db";
-    const authToken = process.env.DATABASE_AUTH_TOKEN;
+  const url = process.env.DATABASE_URL || ENV.databaseUrl ||
+    (ENV.nodeEnv === "production" ? "" : "file:./data/kabadiwala.db");
+  if (!url) throw new Error("DATABASE_URL is not set");
 
-    const client = createClient({
-      url,
-      authToken,
-    });
+  const client = createClient({
+    url,
+    authToken: process.env.DATABASE_AUTH_TOKEN,
+  });
 
-    _db = drizzle(client);
-  } catch (error) {
-    console.warn("[Database] Failed to open SQLite database:", error);
-    _db = null;
-  }
+  _db = drizzle(client, { schema });
 
   return _db;
 }
