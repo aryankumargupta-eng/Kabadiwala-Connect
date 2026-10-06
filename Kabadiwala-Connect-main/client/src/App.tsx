@@ -650,6 +650,7 @@ function App() {
       : "collector"
   );
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const localDemoWorkspace = useRef(false);
   const [userName, setUserName] = useState<string | undefined>(undefined);
   const [language, setLanguage] = useState<Language>(
     () => (localStorage.getItem("app_language") as Language) || "EN"
@@ -808,10 +809,10 @@ function App() {
       if (authQuery.isLoading) return;
       const path = window.location.pathname;
       const authenticated = Boolean(authQuery.data);
-      if (path === "/" || path === "/login" || !authenticated) {
+      if (path === "/" || path === "/login" || (!authenticated && !localDemoWorkspace.current)) {
         setWorkspaceOpen(false);
         setView("home");
-        if (!authenticated && path !== "/" && path !== "/login") {
+        if (!authenticated && !localDemoWorkspace.current && path !== "/" && path !== "/login") {
           window.history.replaceState({}, "", "/login");
         }
         return;
@@ -846,7 +847,8 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const openWorkspace = (nextRole: Role, name?: string) => {
+  const openWorkspace = (nextRole: Role, name?: string, isDemo = false) => {
+    localDemoWorkspace.current = isDemo;
     setRole(nextRole);
     setView("home");
     setWorkspaceOpen(true);
@@ -876,6 +878,7 @@ function App() {
 
   const logout = async () => {
     await logoutMutation.mutateAsync();
+    localDemoWorkspace.current = false;
     setWorkspaceOpen(false);
     window.history.replaceState({}, "", "/login");
     await authQuery.refetch();

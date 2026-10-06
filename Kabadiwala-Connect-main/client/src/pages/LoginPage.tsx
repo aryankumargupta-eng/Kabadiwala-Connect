@@ -50,7 +50,7 @@ export default function LoginPage({
   onOpenWorkspace,
   onLanguageChange,
 }: {
-  onOpenWorkspace: (role: Role, name?: string) => void;
+  onOpenWorkspace: (role: Role, name?: string, isDemo?: boolean) => void;
   onLanguageChange: (language: Language) => void;
 }) {
   const { language: appLanguage, t } = useI18n();
@@ -118,7 +118,7 @@ export default function LoginPage({
     const demoRole = getDemoLoginRole(email, password);
     if (demoRole) {
       onLanguageChange(language);
-      onOpenWorkspace(demoRole);
+      onOpenWorkspace(demoRole, undefined, true);
       return;
     }
 

@@ -19,7 +19,7 @@ npm install --legacy-peer-deps --package-lock=false
 
 ## Quick local setup
 
-The project uses a local SQLite database. **Docker, MySQL, XAMPP, and port 3306 are not required.**
+The project uses libSQL, with a local SQLite database by default during development. **Docker, MySQL, XAMPP, and port 3306 are not required.**
 
 ```bash
 npm install --legacy-peer-deps --package-lock=false
@@ -27,7 +27,7 @@ npm run db:push
 npm run dev
 ```
 
-The SQLite file is created automatically at `data/kabadiwala.db`.
+`npm run dev` does not automatically push schema changes. The SQLite file is created automatically at `data/kabadiwala.db`.
 
 ## Database setup
 
@@ -50,6 +50,8 @@ Required for database-backed authentication:
 ```env
 DATABASE_URL=file:./data/kabadiwala.db
 ```
+
+For Vercel, use a persistent hosted libSQL database (such as Turso) instead of the local `file:` URL. Set `DATABASE_URL` to the database's `libsql://` URL and set `DATABASE_AUTH_TOKEN` to its auth token in the Vercel project's Environment Variables for each deployment environment that needs the database. Set the same values in your local shell before running `npm run db:push` to create/update the hosted database tables. Do not commit the token. Local SQLite files are not persistent across Vercel function instances.
 
 Required for real mobile OTP:
 
@@ -86,12 +88,13 @@ Development:
 npm run dev
 ```
 
-Production build and start:
+Production build:
 
 ```bash
 npm run build
-npm run start
 ```
+
+Vercel serves the API through `api/index.ts`; it does not use a `start` script.
 
 Validation commands:
 
@@ -123,6 +126,17 @@ Users choose one of two simple methods:
    - OTP field
    - Verify OTP
    - Resend OTP with cooldown
+
+### Demo accounts
+
+Use these demo-only credentials on the login screen to preview each workspace without creating an account:
+
+| Workspace | Email | Password |
+| --- | --- | --- |
+| Collector | `collector.demo@kabadiwala.local` | `Collector@123` |
+| Recycler | `recycler.demo@kabadiwala.local` | `Recycler@123` |
+
+Demo accounts are client-side previews and do not create a server session. Database-backed features and protected API actions require a real account. For a persistent Vercel account, configure the hosted database described above and sign up from the app.
 
 ### Signup
 
@@ -174,7 +188,7 @@ The application limits repeated OTP sends and verification attempts. Wait for th
 
 ### Database errors
 
-This project uses a local SQLite file. Confirm `DATABASE_URL=file:./data/kabadiwala.db` and run:
+Local development defaults to `file:./data/kabadiwala.db`. In production, `DATABASE_URL` must be set to a persistent libSQL database URL; missing production configuration is reported as an error rather than falling back to an in-memory or local database.
 
 ```bash
 npm run db:push
