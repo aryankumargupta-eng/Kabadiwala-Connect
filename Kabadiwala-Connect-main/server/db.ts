@@ -7,23 +7,69 @@ import { ENV } from './_core/env';
 
 const memoryRecoveryZones = new Map<string, InsertRecoveryZone & { id: number }>();
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _dbPromise: Promise<ReturnType<typeof drizzle>> | null = null;
+
+// Vercel's serverless filesystem is read-only except for /tmp. This minimal
+// schema lets password signup and sessions work when no hosted database is
+// configured. Data in /tmp is temporary and isolated to a function instance.
+const AUTH_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  openId TEXT NOT NULL UNIQUE,
+  name TEXT,
+  email TEXT,
+  phone TEXT,
+  phoneVerifiedAt INTEGER,
+  emailVerifiedAt INTEGER,
+  preferredLanguage TEXT NOT NULL DEFAULT 'EN',
+  loginMethod TEXT,
+  role TEXT NOT NULL DEFAULT 'user',
+  createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+  updatedAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+  lastSignedIn INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+  passwordHash TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique ON users (email);
+CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users (phone);
+CREATE TABLE IF NOT EXISTS sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userId INTEGER NOT NULL,
+  tokenHash TEXT NOT NULL UNIQUE,
+  expiresAt INTEGER NOT NULL,
+  createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+);
+CREATE TABLE IF NOT EXISTS verification_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  userId INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  tokenHash TEXT NOT NULL,
+  expiresAt INTEGER NOT NULL,
+  createdAt INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+);
+`;
 
 export async function getDb() {
-  if (_db) return _db;
+  if (!_dbPromise) {
+    _dbPromise = (async () => {
+      const url = process.env.DATABASE_URL || ENV.databaseUrl ||
+        (process.env.VERCEL === "1" || ENV.nodeEnv === "production"
+          ? "file:/tmp/kabadiwala.db"
+          : "file:./data/kabadiwala.db");
 
-  const url = process.env.DATABASE_URL || ENV.databaseUrl ||
-    (ENV.nodeEnv === "production" ? "" : "file:./data/kabadiwala.db");
-  if (!url) throw new Error("DATABASE_URL is not set");
+      const client = createClient({
+        url,
+        authToken: process.env.DATABASE_AUTH_TOKEN,
+      });
 
-  const client = createClient({
-    url,
-    authToken: process.env.DATABASE_AUTH_TOKEN,
-  });
+      await client.executeMultiple(AUTH_SCHEMA_SQL);
+      return drizzle(client, { schema });
+    })().catch((error) => {
+      _dbPromise = null;
+      throw error;
+    });
+  }
 
-  _db = drizzle(client, { schema });
-
-  return _db;
+  return _dbPromise;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

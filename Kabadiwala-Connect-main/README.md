@@ -51,7 +51,7 @@ Required for database-backed authentication:
 DATABASE_URL=file:./data/kabadiwala.db
 ```
 
-For Vercel, use a persistent hosted libSQL database (such as Turso) instead of the local `file:` URL. Set `DATABASE_URL` to the database's `libsql://` URL and set `DATABASE_AUTH_TOKEN` to its auth token in the Vercel project's Environment Variables for each deployment environment that needs the database. Set the same values in your local shell before running `npm run db:push` to create/update the hosted database tables. Do not commit the token. Local SQLite files are not persistent across Vercel function instances.
+For Vercel, the app uses a temporary SQLite database at `/tmp/kabadiwala.db` when `DATABASE_URL` is not configured. This supports basic password signup and login, but `/tmp` is ephemeral and isolated to a serverless function instance: accounts and sessions can disappear after a cold start and may not be visible to another instance. This mode is for demos only. For persistent user accounts and all database-backed features, use a hosted libSQL database (such as Turso), set `DATABASE_URL` to its `libsql://` URL and `DATABASE_AUTH_TOKEN` to its token in Vercel Environment Variables, and run `npm run db:push` against that database. Never commit the token.
 
 Required for real mobile OTP:
 
