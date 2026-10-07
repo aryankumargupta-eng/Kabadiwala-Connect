@@ -51,8 +51,11 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
 export async function getDb() {
   if (!_dbPromise) {
     _dbPromise = (async () => {
-      const url = process.env.DATABASE_URL || ENV.databaseUrl ||
-        (process.env.VERCEL === "1" || ENV.nodeEnv === "production"
+      const configuredUrl = process.env.DATABASE_URL || ENV.databaseUrl;
+      const isVercel = process.env.VERCEL === "1";
+      const url = isVercel && (!configuredUrl || configuredUrl.startsWith("file:"))
+        ? "file:/tmp/kabadiwala.db"
+        : configuredUrl || (ENV.nodeEnv === "production"
           ? "file:/tmp/kabadiwala.db"
           : "file:./data/kabadiwala.db");
 
