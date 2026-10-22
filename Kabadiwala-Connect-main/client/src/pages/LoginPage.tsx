@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Eye, EyeOff, Globe2, Smartphone } from "lucide-react";
+import { Eye, EyeOff, Globe2, Hash, LockKeyhole, Mail, Smartphone, UserRound } from "lucide-react";
 import { trpc } from "../lib/trpc";
 import { useI18n, type Language, type TranslationKey } from "../i18n";
 import "./LoginPage.css";
@@ -202,8 +202,8 @@ export default function LoginPage({
 
   const methodTabs = (method: AuthMethod, setMethod: (method: AuthMethod) => void) => (
     <div className="auth-method-tabs" role="tablist" aria-label={t("chooseLogin")}>
-      <button type="button" role="tab" aria-selected={method === "password"} className={method === "password" ? "active" : ""} onClick={() => { setMethod("password"); setError(""); }}>✉ {t("emailTab")}</button>
-      <button type="button" role="tab" aria-selected={method === "otp"} className={method === "otp" ? "active" : ""} onClick={() => { setMethod("otp"); setError(""); }}>📱 {t("mobileTab")}</button>
+      <button type="button" role="tab" aria-selected={method === "password"} className={method === "password" ? "active" : ""} onClick={() => { setMethod("password"); setError(""); }}><Mail size={16} aria-hidden="true" /> {t("emailTab")}</button>
+      <button type="button" role="tab" aria-selected={method === "otp"} className={method === "otp" ? "active" : ""} onClick={() => { setMethod("otp"); setError(""); }}><Smartphone size={16} aria-hidden="true" /> {t("mobileTab")}</button>
     </div>
   );
 
@@ -217,7 +217,13 @@ export default function LoginPage({
         </select>
       </div>
 
-      <div className="auth-flip-container">
+      <div className="auth-layout">
+        <section className="auth-form-panel">
+          <a className="auth-brand" href="/" aria-label="Kabadiwala Connect">
+            <img className="auth-brand-mark" src="/kabadiwala-logo.png" alt="" />
+            <span>Kabadiwala <strong>Connect</strong></span>
+          </a>
+          <div className="auth-flip-container">
         <div className={`auth-flip-card ${flipped ? "flipped" : ""}`}>
           <section className="auth-card-side auth-front" aria-label={t("login")}>
             {!flipped && <form noValidate className="auth-form-box" onSubmit={loginMethod === "password" ? loginWithPassword : (event) => verifyMobile(event, "login")}>
@@ -226,14 +232,14 @@ export default function LoginPage({
               {methodTabs(loginMethod, setLoginMethod)}
               {loginMethod === "password" ? <>
                 <label className="auth-field-label" htmlFor="login-email">{t("email")}</label>
-                <div className="auth-input-box"><span className="auth-icon">✉</span><input id="login-email" name="email" type="email" autoComplete="username" /></div>
+                <div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><Mail size={17} /></span><input id="login-email" name="email" type="email" autoComplete="username" /></div>
                 <label className="auth-field-label" htmlFor="login-password">{t("password")}</label>
-                <div className="auth-input-box"><span className="auth-icon">🔒</span><input id="login-password" name="password" type={showLoginPassword ? "text" : "password"} autoComplete="current-password" /><button type="button" className="auth-password-eye" aria-label={showLoginPassword ? t("hidePassword") : t("showPassword")} onClick={() => setShowLoginPassword(v => !v)}>{showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
+                <div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><LockKeyhole size={17} /></span><input id="login-password" name="password" type={showLoginPassword ? "text" : "password"} autoComplete="current-password" /><button type="button" className="auth-password-eye" aria-label={showLoginPassword ? t("hidePassword") : t("showPassword")} onClick={() => setShowLoginPassword(v => !v)}>{showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
                 <div className="auth-options"><label className="auth-remember"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /><span className="auth-switch" />{t("rememberMe")}</label><button type="button" className="auth-forgot" onClick={() => setError(t("forgotPasswordPlaceholder"))}>{t("forgotPassword")}</button></div>
                 <button className="auth-btn" type="submit" disabled={loginMutation.isPending}>{loginMutation.isPending ? t("loadingSignIn") : t("signIn")}</button>
               </> : <>
                 <label className="auth-field-label" htmlFor="login-phone">{t("mobileNumber")}</label>
-                {!loginOtpSent ? <div className="auth-phone-row"><div className="auth-input-box auth-country-box"><span className="auth-icon">🌐</span><select aria-label={t("countryCode")} value={loginCountryCode} onChange={e => setLoginCountryCode(e.target.value)}><option value="+91">+91</option><option value="+1">+1</option><option value="+44">+44</option><option value="+971">+971</option></select></div><div className="auth-input-box auth-phone-box"><span className="auth-icon"><Smartphone size={20} /></span><input id="login-phone" value={loginPhone} onChange={e => setLoginPhone(e.target.value.replace(/\D/g, ""))} placeholder="9876543210" inputMode="tel" autoComplete="tel" /></div></div> : <div className="auth-otp-step"><p className="auth-otp-instructions">{t("otpSentTo")} <strong>{loginPhone}</strong></p><label className="auth-field-label" htmlFor="login-otp">{t("otp")}</label><div className="auth-input-box"><span className="auth-icon">#</span><input id="login-otp" name="otp" inputMode="numeric" maxLength={10} autoComplete="one-time-code" autoFocus /></div><button type="button" className="auth-secondary" onClick={() => { setLoginOtpSent(false); setError(""); }}>{t("changeNumber")}</button></div>}
+                {!loginOtpSent ? <div className="auth-phone-row"><div className="auth-input-box auth-country-box"><span className="auth-icon" aria-hidden="true"><Globe2 size={17} /></span><select aria-label={t("countryCode")} value={loginCountryCode} onChange={e => setLoginCountryCode(e.target.value)}><option value="+91">+91</option><option value="+1">+1</option><option value="+44">+44</option><option value="+971">+971</option></select></div><div className="auth-input-box auth-phone-box"><span className="auth-icon" aria-hidden="true"><Smartphone size={17} /></span><input id="login-phone" value={loginPhone} onChange={e => setLoginPhone(e.target.value.replace(/\D/g, ""))} placeholder="9876543210" inputMode="tel" autoComplete="tel" /></div></div> : <div className="auth-otp-step"><p className="auth-otp-instructions">{t("otpSentTo")} <strong>{loginPhone}</strong></p><label className="auth-field-label" htmlFor="login-otp">{t("otp")}</label><div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><Hash size={17} /></span><input id="login-otp" name="otp" inputMode="numeric" maxLength={10} autoComplete="one-time-code" autoFocus /></div><button type="button" className="auth-secondary" onClick={() => { setLoginOtpSent(false); setError(""); }}>{t("changeNumber")}</button></div>}
                 <button className="auth-btn" type={loginOtpSent ? "submit" : "button"} disabled={sendOtpMutation.isPending || verifyOtpMutation.isPending} onClick={loginOtpSent ? undefined : () => sendOtp("login")}>{loginOtpSent ? (verifyOtpMutation.isPending ? t("loadingVerifyOtp") : t("verifyOtp")) : (sendOtpMutation.isPending ? t("loadingSendOtp") : t("sendOtp"))}</button>
                 {loginOtpSent && <button type="button" className="auth-resend" disabled={loginCooldown > 0 || sendOtpMutation.isPending} onClick={() => sendOtp("login")}>{loginCooldown > 0 ? `${t("resendOtp")} (${loginCooldown}s)` : t("resendOtp")}</button>}
               </>}
@@ -249,15 +255,15 @@ export default function LoginPage({
               {methodTabs(signupMethod, setSignupMethod)}
               {!signupOtpSent ? <>
                 <label className="auth-field-label" htmlFor="signup-name">{t("name")}</label>
-                <div className="auth-input-box"><span className="auth-icon">👤</span><input id="signup-name" name="name" type="text" autoComplete="name" value={signupName} onChange={e => setSignupName(e.target.value)} /></div>
+                <div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><UserRound size={17} /></span><input id="signup-name" name="name" type="text" autoComplete="name" value={signupName} onChange={e => setSignupName(e.target.value)} /></div>
                 <label className="auth-field-label" htmlFor="signup-mobile">{t("mobileNumber")}</label>
-                <div className="auth-phone-row"><div className="auth-input-box auth-country-box"><span className="auth-icon">🌐</span><select aria-label={t("countryCode")} value={signupCountryCode} onChange={e => setSignupCountryCode(e.target.value)}><option value="+91">+91</option><option value="+1">+1</option><option value="+44">+44</option><option value="+971">+971</option></select></div><div className="auth-input-box auth-phone-box"><span className="auth-icon"><Smartphone size={20} /></span><input id="signup-mobile" name="phone" value={signupPhone} onChange={e => setSignupPhone(e.target.value.replace(/\D/g, ""))} placeholder="9876543210" inputMode="tel" autoComplete="tel" /></div></div>
+                <div className="auth-phone-row"><div className="auth-input-box auth-country-box"><span className="auth-icon" aria-hidden="true"><Globe2 size={17} /></span><select aria-label={t("countryCode")} value={signupCountryCode} onChange={e => setSignupCountryCode(e.target.value)}><option value="+91">+91</option><option value="+1">+1</option><option value="+44">+44</option><option value="+971">+971</option></select></div><div className="auth-input-box auth-phone-box"><span className="auth-icon" aria-hidden="true"><Smartphone size={17} /></span><input id="signup-mobile" name="phone" value={signupPhone} onChange={e => setSignupPhone(e.target.value.replace(/\D/g, ""))} placeholder="9876543210" inputMode="tel" autoComplete="tel" /></div></div>
                 <label className="auth-field-label" htmlFor="signup-email">{t("email")}</label>
-                <div className="auth-input-box"><span className="auth-icon">✉</span><input id="signup-email" name="email" type="email" autoComplete="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} /></div>
+                <div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><Mail size={17} /></span><input id="signup-email" name="email" type="email" autoComplete="email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} /></div>
                 <label className="auth-field-label" htmlFor="signup-password">{t("password")}</label>
-                <div className="auth-input-box"><span className="auth-icon">🔒</span><input id="signup-password" name="password" type={showSignupPassword ? "text" : "password"} autoComplete="new-password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} /><button type="button" className="auth-password-eye" aria-label={showSignupPassword ? t("hidePassword") : t("showPassword")} onClick={() => setShowSignupPassword(v => !v)}>{showSignupPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
+                <div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><LockKeyhole size={17} /></span><input id="signup-password" name="password" type={showSignupPassword ? "text" : "password"} autoComplete="new-password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} /><button type="button" className="auth-password-eye" aria-label={showSignupPassword ? t("hidePassword") : t("showPassword")} onClick={() => setShowSignupPassword(v => !v)}>{showSignupPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>
                 <label className="auth-field-label" htmlFor="signup-confirm">{t("confirmPassword")}</label>
-                <div className="auth-input-box"><span className="auth-icon">🔒</span><input id="signup-confirm" name="confirmPassword" type="password" autoComplete="new-password" value={signupConfirmPassword} onChange={e => setSignupConfirmPassword(e.target.value)} /></div>
+                <div className="auth-input-box"><span className="auth-icon" aria-hidden="true"><LockKeyhole size={17} /></span><input id="signup-confirm" name="confirmPassword" type="password" autoComplete="new-password" value={signupConfirmPassword} onChange={e => setSignupConfirmPassword(e.target.value)} /></div>
                 {signupMethod === "otp" && <p className="auth-otp-instructions">{t("otpInstructions")}</p>}
               </> : <div className="auth-otp-step"><p className="auth-otp-instructions">{t("otpSentTo")} <strong>{signupPhone}</strong></p><label className="auth-field-label" htmlFor="signup-otp">{t("otp")}</label><div className="auth-input-box"><span className="auth-icon">#</span><input id="signup-otp" name="otp" inputMode="numeric" maxLength={10} autoComplete="one-time-code" autoFocus /></div><button type="button" className="auth-secondary" onClick={() => { setSignupOtpSent(false); setError(""); }}>{t("changeNumber")}</button></div>}
               <button className="auth-btn" type={signupMethod === "otp" && !signupOtpSent ? "button" : "submit"} disabled={signupMutation.isPending || sendOtpMutation.isPending || verifyOtpMutation.isPending} onClick={signupMethod === "otp" && !signupOtpSent ? () => sendOtp("signup") : undefined}>{signupMethod === "otp" && !signupOtpSent ? (sendOtpMutation.isPending ? t("loadingSendOtp") : t("sendOtp")) : (verifyOtpMutation.isPending ? t("loadingVerifyOtp") : signupMutation.isPending ? t("loadingCreate") : t("createAccount"))}</button>
@@ -266,9 +272,27 @@ export default function LoginPage({
               <p className="auth-bottom-text">{t("haveAccount")} <button type="button" className="auth-flip-link" onClick={() => { setError(""); setFlipped(false); }}>{t("signIn")}</button></p>
             </form>}
           </section>
+            </div>
+          </div>
+          </section>
+          <aside className="auth-story">
+            <div className="auth-story-copy">
+              <h2>
+                {language === "हिंदी" ? "हर सौदे का साफ़ हिसाब।" : language === "मराठी" ? "प्रत्येक व्यवहाराची स्पष्ट नोंद." : "A clear record for every handover."}
+              </h2>
+              <p className="auth-story-description">
+                {language === "हिंदी" ? "लॉट दर्ज करें, स्थानीय दरों की तुलना करें और हर हस्तांतरण का रिकॉर्ड रखें।" : language === "मराठी" ? "लॉट नोंदवा, स्थानिक दरांची तुलना करा आणि प्रत्येक हस्तांतरणाची नोंद ठेवा." : "Record a lot, compare local rates, and keep each handover traceable."}
+              </p>
+            </div>
+            <div className="auth-ledger" aria-hidden="true">
+              <div className="auth-ledger-heading"><span>SAMPLE LOT RECORD</span><span>EXAMPLE</span></div>
+              <div className="auth-ledger-row"><span className="auth-ledger-index">01</span><span className="auth-ledger-material">Laptop boards</span><span className="auth-ledger-weight">3.2 kg</span></div>
+              <div className="auth-ledger-row"><span className="auth-ledger-index">02</span><span className="auth-ledger-material">Copper cable</span><span className="auth-ledger-weight">7.8 kg</span></div>
+              <div className="auth-ledger-foot"><span>COLLECTION / RECYCLING</span><span>01 / 02</span></div>
+            </div>
+            <p className="auth-story-footer">KABADIWALA CONNECT <span>/</span> FIELD WORKSPACE</p>
+          </aside>
         </div>
-      </div>
     </main>
   );
 }
-
