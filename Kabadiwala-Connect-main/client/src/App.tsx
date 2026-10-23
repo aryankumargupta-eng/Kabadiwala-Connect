@@ -363,9 +363,9 @@ const dictionary = {
     prices: "Price board",
     activity: "My activity",
     greeting: "Good morning",
-    hero: "Turn every lot into a fairer handover.",
+    hero: "Check local rates before handover.",
     heroSub:
-      "Create a digital lot, compare local rates, and connect with verified recyclers — even when you are offline.",
+      "Record the material and weight, compare recycler offers, and save the receipt. Works offline too.",
     primary: "Create new lot",
   },
   हिंदी: {
@@ -374,9 +374,9 @@ const dictionary = {
     prices: "कीमत बोर्ड",
     activity: "मेरी गतिविधि",
     greeting: "सुप्रभात",
-    hero: "हर लॉट को बेहतर सौदे में बदलें।",
+    hero: "हस्तांतरण से पहले स्थानीय दर देखें।",
     heroSub:
-      "डिजिटल लॉट बनाएं, स्थानीय कीमत देखें और प्रमाणित रिसाइकलर से जुड़ें — ऑफलाइन भी।",
+      "सामग्री और वजन दर्ज करें, रिसाइकलर के प्रस्तावों की तुलना करें और रसीद सहेजें। ऑफलाइन भी काम करता है।",
     primary: "नया लॉट बनाएं",
   },
   मराठी: {
@@ -385,9 +385,9 @@ const dictionary = {
     prices: "किंमत फलक",
     activity: "माझी नोंद",
     greeting: "शुभ सकाळ",
-    hero: "प्रत्येक लॉटचा योग्य व्यवहार करा.",
+    hero: "हस्तांतरणापूर्वी स्थानिक दर तपासा.",
     heroSub:
-      "डिजिटल लॉट तयार करा, स्थानिक दर पहा आणि अधिकृत रिसायकलरशी जोडा — ऑफलाइन देखील.",
+      "साहित्य आणि वजन नोंदवा, रिसायकलरच्या प्रस्तावांची तुलना करा आणि पावती जतन करा. ऑफलाइनही काम करा.",
     primary: "नवीन लॉट तयार करा",
   },
 } as const;
@@ -417,19 +417,19 @@ const voiceGuideCopy = {
   EN: {
     title: "Get a fairer price for your lot.",
     text: "Take a photo of your lot, enter its weight, and connect with a verified recycler for a fairer price.",
-    toast: "Voice guidance is available in Online Mode — reconnect to use it",
+    toast: "Voice guidance is available online. Reconnect to use it.",
   },
   हिंदी: {
     title: "अपने लॉट की सही कीमत पाएं।",
     text: "अपने लॉट की तस्वीर लें, वजन दर्ज करें और बेहतर कीमत के लिए प्रमाणित रिसाइकलर से जुड़ें।",
     toast:
-      "वॉइस गाइड केवल ऑनलाइन मोड में उपलब्ध है — इसे उपयोग करने के लिए फिर से जुड़ें",
+      "वॉइस गाइड केवल ऑनलाइन मोड में उपलब्ध है। इसका उपयोग करने के लिए फिर से जुड़ें।",
   },
   मराठी: {
     title: "तुमच्या लॉटची योग्य किंमत मिळवा.",
     text: "तुमच्या लॉटचा फोटो काढा, वजन लिहा आणि योग्य किमतीसाठी अधिकृत रिसायकलरशी जोडा.",
     toast:
-      "व्हॉइस गाइड केवळ ऑनलाइन मोडमध्ये उपलब्ध आहे — वापरण्यासाठी पुन्हा कनेक्ट करा",
+      "व्हॉइस गाइड केवळ ऑनलाइन मोडमध्ये उपलब्ध आहे. वापरण्यासाठी पुन्हा कनेक्ट करा.",
   },
 } as const;
 
@@ -809,10 +809,19 @@ function App() {
       if (authQuery.isLoading) return;
       const path = window.location.pathname;
       const authenticated = Boolean(authQuery.data);
-      if (path === "/" || path === "/login" || (!authenticated && !localDemoWorkspace.current)) {
+      if (
+        path === "/" ||
+        path === "/login" ||
+        (!authenticated && !localDemoWorkspace.current)
+      ) {
         setWorkspaceOpen(false);
         setView("home");
-        if (!authenticated && !localDemoWorkspace.current && path !== "/" && path !== "/login") {
+        if (
+          !authenticated &&
+          !localDemoWorkspace.current &&
+          path !== "/" &&
+          path !== "/login"
+        ) {
           window.history.replaceState({}, "", "/login");
         }
         return;
@@ -889,8 +898,8 @@ function App() {
       const next = !previous;
       setToast(
         next
-          ? "Back online — 1 pending lot synced"
-          : "Offline mode on — core actions still work"
+          ? "Back online. 1 pending lot synced."
+          : "Offline mode on. Core actions still work."
       );
       return next;
     });
@@ -918,7 +927,7 @@ function App() {
       });
       await trpcUtils.fieldData.invalidate();
     } catch {
-      setToast("Saved locally — database sync will retry when you reconnect");
+      setToast("Saved locally. Database sync will retry when you reconnect.");
     }
     window.setTimeout(() => {
       setSyncing(false);
@@ -940,7 +949,7 @@ function App() {
         },
         ...items,
       ]);
-      setToast("Handover verified — receipt added to your ledger");
+      setToast("Handover verified. Receipt added to your ledger.");
       navigate("activity");
     }, 900);
   };
@@ -975,7 +984,7 @@ function App() {
       setToast("Lot saved to the persistent field dataset");
     } catch {
       setToast(
-        "Lot kept offline — it will sync when the database is reachable"
+        "Lot kept offline. It will sync when the database is reachable."
       );
     }
     const liveLot: LiveLot = {
@@ -1078,7 +1087,6 @@ function App() {
   return (
     <LanguageProvider language={language}>
       <div className="app-shell">
-        <div className="grain" aria-hidden="true" />
         <div className="app-layout">
           <Sidebar
             role={role}
@@ -1213,7 +1221,7 @@ function Sidebar({
           <div className="brand-name">
             kabadiwala<span>connect</span>
           </div>
-          <div className="brand-kicker">formalize the chain</div>
+          <div className="brand-kicker">collection to recycling</div>
         </div>
       </div>
       <div className="sidebar-rule" />
@@ -1441,18 +1449,35 @@ function CollectorHome({
   onVoice: () => void;
 }) {
   const { t: copy } = useI18n();
+  const handoverSteps =
+    language === "हिंदी"
+      ? [
+          ["01", "लॉट दर्ज करें"],
+          ["02", "स्थानीय दरों की तुलना करें"],
+          ["03", "हस्तांतरण रिकॉर्ड करें"],
+        ]
+      : language === "मराठी"
+        ? [
+            ["01", "लॉट नोंदवा"],
+            ["02", "स्थानिक दरांची तुलना करा"],
+            ["03", "हस्तांतरणाची नोंद ठेवा"],
+          ]
+        : [
+            ["01", "Create a lot"],
+            ["02", "Compare local rates"],
+            ["03", "Record the handover"],
+          ];
   return (
     <div className="page-content home-page">
       <section className="welcome-row">
         <div>
-          <div className="eyebrow green">COLLECTOR OVERVIEW · 02 SEPT 2026</div>
           <h1>{[t.greeting, userName?.trim()].filter(Boolean).join(", ")}</h1>
           <p className="welcome-sub">
             {language === "मराठी"
-              ? "आजच्या लॉटमधून अधिक कमवा."
+              ? "पुढील हस्तांतरणापूर्वी आजचे दर तपासा."
               : language === "हिंदी"
-                ? "आज के लॉट से अधिक कमाएं।"
-                : "Let’s make today’s lots count for more."}
+                  ? "अगले हस्तांतरण से पहले आज के भाव देखें।"
+                  : "Check today’s rates before your next handover."}
           </p>
         </div>
         <div className="welcome-actions">
@@ -1470,29 +1495,32 @@ function CollectorHome({
       </section>
       <section className="hero-band">
         <div className="hero-copy">
-          <div className="hero-kicker">
-            <span className="signal-dot" /> FORMAL RECYCLING, MADE SIMPLE
-          </div>
           <h2>{t.hero}</h2>
           <p>{t.heroSub}</p>
           <button className="hero-button" onClick={() => onNavigate("create")}>
             {t.primary} <ArrowRight size={17} />
           </button>
         </div>
-        <div className="hero-visual" aria-hidden="true">
-          <div className="orbit orbit-one" />
-          <div className="orbit orbit-two" />
-          <div className="hero-leaf">
-            <Recycle size={68} strokeWidth={1.1} />
-          </div>
-          <div className="hero-tag tag-one">
-            <ShieldCheck size={14} /> {copy("verifiedRoute")}
-          </div>
-          <div className="hero-tag tag-two">
-            <CircleDollarSign size={14} /> {copy("fairPriceRange")}
-          </div>
-          <div className="hero-tag tag-three">
-            <WifiOff size={14} /> {copy("offlineReady")}
+        <div className="hero-visual">
+          <p className="hero-route-label">
+            {language === "हिंदी"
+              ? "हर हस्तांतरण के तीन चरण"
+              : language === "मराठी"
+                ? "प्रत्येक हस्तांतरणाचे तीन टप्पे"
+                : "Three steps in every handover"}
+          </p>
+          <ol className="hero-route">
+            {handoverSteps.map(([number, label]) => (
+              <li key={number}>
+                <span className="hero-route-number">{number}</span>
+                <span>{label}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="hero-route-foot">
+            <span>COLLECTION</span>
+            <span className="hero-route-line" aria-hidden="true" />
+            <span>RECYCLING</span>
           </div>
         </div>
       </section>
@@ -1705,7 +1733,7 @@ function CreateLot({
 
     const analysis = await analyzeImageForMaterial(file, draft.weight);
     if (!analysis) {
-      onToast(`${copy("demoPhotoReady")} — ${copy("aiSuggestionReady")}`);
+      onToast(`${copy("demoPhotoReady")}. ${copy("aiSuggestionReady")}`);
       return;
     }
 
@@ -1972,7 +2000,7 @@ function CreateLot({
           <div className="estimate-card">
             <div className="eyebrow amber-text">INDICATIVE VALUE</div>
             <div className="estimate-value">
-              ₹{low.toLocaleString("en-IN")} <span>—</span> ₹
+              ₹{low.toLocaleString("en-IN")} <span>to</span> ₹
               {high.toLocaleString("en-IN")}
             </div>
             <div className="estimate-meta">
@@ -2586,7 +2614,7 @@ function PriceBoard({
             onClick={() => {
               setSelectedMaterial(item.name);
               onToast?.(
-                `${item.name} selected — use this rate when applying an offer`
+                `${item.name} selected. Use this rate when applying an offer.`
               );
             }}
             role="button"
@@ -2608,7 +2636,7 @@ function PriceBoard({
             </div>
             <div className="price-range">
               <strong>
-                ₹{Math.round(item.rate * 0.92)} — ₹
+                ₹{Math.round(item.rate * 0.92)} to ₹
                 {Math.round(item.rate * 1.08)}
               </strong>
               <span>{c.indicative}</span>
@@ -3373,7 +3401,7 @@ function DatasetTable({ onToast }: { onToast: (message: string) => void }) {
         <ShieldCheck size={16} />
         <span>
           Privacy by design: collector records use a minimal ID, preferred
-          language and operating area — no unnecessary personal information.
+          language and operating area. No unnecessary personal information.
         </span>
       </div>
     </div>
@@ -3578,7 +3606,7 @@ function RecyclerConsole({
                   price={lot.price}
                   urgent
                   onAccept={() =>
-                    onToast(`Offer accepted — ${lot.id} collector notified`)
+                    onToast(`Offer accepted for ${lot.id}. Collector notified.`)
                   }
                   onMessage={() =>
                     setMessageLot({
@@ -3598,7 +3626,7 @@ function RecyclerConsole({
                 urgent
                 onAccept={() => {
                   setAccepted(true);
-                  onToast("Offer accepted — collector notified");
+                  onToast("Offer accepted. Collector notified.");
                 }}
                 onMessage={() =>
                   setMessageLot({

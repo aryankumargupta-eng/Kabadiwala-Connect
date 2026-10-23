@@ -2,21 +2,9 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 
-export type Context = TrpcContext;
+export { createContext } from "./context";
 
-export const createContext = async ({
-  req,
-  res,
-}: {
-  req: any;
-  res: any;
-}): Promise<TrpcContext> => {
-  return {
-    req,
-    res,
-    user: null,
-  };
-};
+export type Context = TrpcContext;
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,

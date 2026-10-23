@@ -2,6 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+import helmet from "helmet";
 
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
@@ -12,8 +13,55 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);
+const forgeApiOrigin =
+  process.env.NODE_ENV === "production"
+    ? new URL(
+        process.env.VITE_FRONTEND_FORGE_API_URL ||
+          "https://forge.butterfly-effect.dev"
+      ).origin
+    : "https://forge.butterfly-effect.dev";
 
 app.set("trust proxy", 1);
+app.use(
+  helmet({
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production"
+        ? {
+            directives: {
+              "connect-src": [
+                "'self'",
+                forgeApiOrigin,
+                "https://maps.googleapis.com",
+                "https://maps.gstatic.com",
+              ],
+              "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+              "img-src": [
+                "'self'",
+                "data:",
+                "blob:",
+                "https://*.tile.openstreetmap.org",
+                "https://github.com",
+                "https://avatars.githubusercontent.com",
+                "https://maps.googleapis.com",
+                "https://maps.gstatic.com",
+              ],
+              "script-src": [
+                "'self'",
+                forgeApiOrigin,
+                "https://maps.googleapis.com",
+                "https://maps.gstatic.com",
+              ],
+              "style-src": [
+                "'self'",
+                "'unsafe-inline'",
+                "https://fonts.googleapis.com",
+              ],
+            },
+          }
+        : false,
+    crossOriginResourcePolicy: false,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -23,7 +71,7 @@ app.use(
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext,
-  }),
+  })
 );
 
 // Serve static files from dist/public in production
