@@ -691,10 +691,12 @@ function App() {
   const createHandoverMutation = trpc.handovers.create.useMutation();
 
   const t = dictionary[language];
+  const authName =
+    typeof authQuery.data?.name === "string" ? authQuery.data.name.trim() : "";
   const displayName =
-    authQuery.data?.name?.trim() ||
+    authName ||
     userName?.trim() ||
-    (role === "collector" ? "Ramesh K." : "EcoCircuit Recycling");
+    (role === "collector" ? "Aryan Kumar Gupta" : "EcoCircuit Recycling");
 
   useEffect(() => {
     const stored = window.localStorage.getItem("kabadiwala-lot-created");
@@ -2914,10 +2916,10 @@ function DataHub({
   onToast: (message: string) => void;
   recyclerMode?: boolean;
   fieldData?: {
-    collectors: unknown[];
-    lots: unknown[];
-    prices: unknown[];
-    recyclers: unknown[];
+    collectors?: unknown[];
+    lots?: unknown[];
+    prices?: unknown[];
+    recyclers?: unknown[];
   };
 }) {
   const [activeTab, setActiveTab] = useState("overview");
