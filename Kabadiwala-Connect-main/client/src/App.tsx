@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
   BarChart3,
@@ -45,8 +44,17 @@ import {
   Zap,
 } from "lucide-react";
 import { trpc } from "./lib/trpc";
+import {
+  defaultStatePriceBenchmark,
+  formatRate,
+  getAverageRate,
+  createLotBenchmarkRates,
+  nationalPriceBenchmarks,
+  statePriceBenchmarks,
+} from "./data/procurementPrices";
 import RecoveryZonesPage from "./pages/RecoveryZones";
 import LoginPage from "./pages/LoginPage";
+import StaffDemoPage from "./pages/StaffDemoPage";
 import { LanguageProvider, type Language, useI18n } from "./i18n";
 import "./index.css";
 
@@ -126,8 +134,8 @@ const initialChatMessages: ChatMessage[] = [
 ];
 
 const categories = [
-  { name: "PCBs", sub: "Laptop boards", rate: 420, color: "mint", icon: "▦" },
-  { name: "Cables", sub: "Copper cable", rate: 280, color: "amber", icon: "⌁" },
+  { name: "PCBs", sub: "Laptop boards", rate: createLotBenchmarkRates.PCBs, color: "mint", icon: "▦" },
+  { name: "Cables", sub: "Copper cable", rate: createLotBenchmarkRates.Cables, color: "amber", icon: "⌁" },
   {
     name: "Batteries",
     sub: "Li-ion packs",
@@ -152,7 +160,7 @@ const categories = [
   {
     name: "Mixed plastic",
     sub: "Sorted plastic",
-    rate: 48,
+    rate: createLotBenchmarkRates["Mixed plastic"],
     color: "slate",
     icon: "◌",
   },
@@ -438,21 +446,23 @@ const pageCopy = {
     back: "← Back to overview",
     priceKicker: "PRICE DISCOVERY",
     priceTitle: "Know your worth before you sell.",
-    priceSub: "Indicative buying rates from recent local observations.",
-    refresh: "Refresh board",
-    updated: "Updated today · Pimpri, Pune",
-    transparency: "Price transparency is your superpower.",
-    compare:
-      "Compare recycler offers against the local range before you accept.",
-    median: "Today's local median",
-    material: "MATERIAL",
-    range: "LOCAL RANGE / KG",
-    trend: "7-DAY TREND",
-    observed: "LAST OBSERVED",
-    indicative: "Indicative",
-    today: "Today",
-    yesterday: "Yesterday",
-    fieldQuote: "field quote",
+    priceSub: "Recycler procurement benchmarks from the supplied workbook.",
+    refresh: "Reload workbook rates",
+    updated: "Workbook benchmark · bulk delivered",
+    transparency: "Workbook procurement benchmarks",
+    compare: "Reference ranges in ₹/kg. Final offers depend on grade and condition.",
+    median: "Covered state / UT markets",
+    material: "MATERIAL / GRADE",
+    range: "PROCUREMENT RANGE / KG",
+    nationalTab: "National benchmarks",
+    stateTab: "State-wise rates",
+    selectedState: "Select state / UT",
+    category: "CATEGORY",
+    endUser: "PRIMARY END-USER",
+    calculatedMidpoint: "Range midpoint (calculated)",
+    marketDriver: "Regional market driver",
+    priceDisclaimer: "Rates are bulk-delivered procurement benchmarks from the workbook, not guaranteed local offers. The workbook leaves average-rate cells blank; displayed midpoints are calculated from each minimum and maximum.",
+    referenceOnly: "Indicative reference",
     ledgerKicker: "YOUR LEDGER",
     ledgerTitle: "Every handover, accounted for.",
     ledgerSub: "A simple record of your work, earnings, and pending dues.",
@@ -505,21 +515,23 @@ const pageCopy = {
     back: "← अवलोकन पर वापस जाएं",
     priceKicker: "कीमत जानकारी",
     priceTitle: "बेचने से पहले अपनी सही कीमत जानें।",
-    priceSub: "हाल के स्थानीय निरीक्षणों से संकेतात्मक खरीद दरें।",
-    refresh: "बोर्ड रीफ्रेश करें",
-    updated: "आज अपडेट · पिंपरी, पुणे",
-    transparency: "कीमत में पारदर्शिता आपकी ताकत है।",
-    compare:
-      "स्वीकार करने से पहले रिसाइकलर की पेशकशों की स्थानीय सीमा से तुलना करें।",
-    median: "आज का स्थानीय औसत",
-    material: "सामग्री",
-    range: "स्थानीय सीमा / किलो",
-    trend: "7-दिन का रुझान",
-    observed: "अंतिम निरीक्षण",
-    indicative: "संकेतात्मक",
-    today: "आज",
-    yesterday: "कल",
-    fieldQuote: "फील्ड दर",
+    priceSub: "दी गई वर्कबुक से रिसाइकलर खरीद के बेंचमार्क।",
+    refresh: "वर्कबुक दरें फिर लोड करें",
+    updated: "वर्कबुक बेंचमार्क · थोक डिलीवरी",
+    transparency: "वर्कबुक खरीद बेंचमार्क",
+    compare: "₹/किलो में संदर्भ सीमा। अंतिम प्रस्ताव ग्रेड और स्थिति पर निर्भर हैं।",
+    median: "राज्य / केंद्रशासित प्रदेश",
+    material: "सामग्री / ग्रेड",
+    range: "खरीद सीमा / किलो",
+    nationalTab: "राष्ट्रीय बेंचमार्क",
+    stateTab: "राज्यवार दरें",
+    selectedState: "राज्य / केंद्रशासित प्रदेश चुनें",
+    category: "श्रेणी",
+    endUser: "प्रमुख अंतिम उपयोगकर्ता",
+    calculatedMidpoint: "सीमा का मध्यबिंदु (गणना)",
+    marketDriver: "क्षेत्रीय बाजार कारक",
+    priceDisclaimer: "दरें वर्कबुक में दी गई थोक-डिलीवरी खरीद बेंचमार्क हैं, सुनिश्चित स्थानीय प्रस्ताव नहीं। वर्कबुक में औसत दर खाली है; दिखाए गए मध्यबिंदु न्यूनतम और अधिकतम से गणना किए गए हैं।",
+    referenceOnly: "संकेतात्मक संदर्भ",
     ledgerKicker: "आपका लेखा",
     ledgerTitle: "हर हैंडओवर का पूरा हिसाब।",
     ledgerSub: "आपके काम, कमाई और बकाया का सरल रिकॉर्ड।",
@@ -572,20 +584,23 @@ const pageCopy = {
     back: "← आढाव्यावर परत जा",
     priceKicker: "किंमत शोध",
     priceTitle: "विक्रीपूर्वी तुमची योग्य किंमत जाणून घ्या.",
-    priceSub: "अलीकडील स्थानिक निरीक्षणांवर आधारित संकेतात्मक खरेदी दर.",
-    refresh: "फलक रिफ्रेश करा",
-    updated: "आज अपडेट · पिंपरी, पुणे",
-    transparency: "किमतीतील पारदर्शकता ही तुमची ताकद आहे.",
-    compare: "स्वीकारण्यापूर्वी रिसायकलरच्या ऑफरची स्थानिक श्रेणीशी तुलना करा.",
-    median: "आजची स्थानिक सरासरी",
-    material: "साहित्य",
-    range: "स्थानिक श्रेणी / किलो",
-    trend: "७ दिवसांचा कल",
-    observed: "शेवटचे निरीक्षण",
-    indicative: "संकेतात्मक",
-    today: "आज",
-    yesterday: "काल",
-    fieldQuote: "फील्ड दर",
+    priceSub: "दिलेल्या वर्कबुकमधील रिसायकलर खरेदी बेंचमार्क.",
+    refresh: "वर्कबुक दर पुन्हा लोड करा",
+    updated: "वर्कबुक बेंचमार्क · घाऊक डिलिव्हरी",
+    transparency: "वर्कबुक खरेदी बेंचमार्क",
+    compare: "₹/किलोमधील संदर्भ श्रेणी. अंतिम ऑफर ग्रेड आणि स्थितीवर अवलंबून असतात.",
+    median: "राज्य / केंद्रशासित प्रदेश",
+    material: "साहित्य / ग्रेड",
+    range: "खरेदी श्रेणी / किलो",
+    nationalTab: "राष्ट्रीय बेंचमार्क",
+    stateTab: "राज्यानुसार दर",
+    selectedState: "राज्य / केंद्रशासित प्रदेश निवडा",
+    category: "श्रेणी",
+    endUser: "प्रमुख अंतिम वापरकर्ता",
+    calculatedMidpoint: "श्रेणीचा मध्यबिंदू (गणना)",
+    marketDriver: "प्रादेशिक बाजार घटक",
+    priceDisclaimer: "दर हे वर्कबुकमधील घाऊक-डिलिव्हरी खरेदी बेंचमार्क आहेत; हमी दिलेल्या स्थानिक ऑफर नाहीत. वर्कबुकमध्ये सरासरी दर रिकामा आहे; दाखवलेले मध्यबिंदू किमान आणि कमाल दरांवरून मोजले आहेत.",
+    referenceOnly: "सूचक संदर्भ",
     ledgerKicker: "तुमची नोंद",
     ledgerTitle: "प्रत्येक हँडओव्हरचा पूर्ण हिशोब.",
     ledgerSub: "तुमचे काम, कमाई आणि बाकी रकमेची साधी नोंद.",
@@ -650,6 +665,9 @@ function App() {
       : "collector"
   );
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [staffDemoOpen, setStaffDemoOpen] = useState(
+    () => window.location.pathname === "/staff-demo"
+  );
   const localDemoWorkspace = useRef(false);
   const [userName, setUserName] = useState<string | undefined>(undefined);
   const [language, setLanguage] = useState<Language>(
@@ -810,6 +828,12 @@ function App() {
     const syncFromPath = () => {
       if (authQuery.isLoading) return;
       const path = window.location.pathname;
+      if (path === "/staff-demo") {
+        setStaffDemoOpen(true);
+        setWorkspaceOpen(false);
+        return;
+      }
+      setStaffDemoOpen(false);
       const authenticated = Boolean(authQuery.data);
       if (
         path === "/" ||
@@ -859,6 +883,7 @@ function App() {
   };
 
   const openWorkspace = (nextRole: Role, name?: string, isDemo = false) => {
+    setStaffDemoOpen(false);
     localDemoWorkspace.current = isDemo;
     setRole(nextRole);
     setView("home");
@@ -1071,11 +1096,28 @@ function App() {
     }
   };
 
+  if (staffDemoOpen) {
+    return (
+      <LanguageProvider language={language}>
+        <StaffDemoPage
+          onBack={() => {
+            setStaffDemoOpen(false);
+            window.history.pushState({}, "", "/login");
+          }}
+        />
+      </LanguageProvider>
+    );
+  }
+
   if (!workspaceOpen) {
     return (
       <LanguageProvider language={language}>
         <LoginPage
           onOpenWorkspace={openWorkspace}
+          onOpenStaffDemo={() => {
+            setStaffDemoOpen(true);
+            window.history.pushState({}, "", "/staff-demo");
+          }}
           onLanguageChange={nextLanguage => {
             setLanguage(nextLanguage);
             localStorage.setItem("app_language", nextLanguage);
@@ -1118,7 +1160,6 @@ function App() {
               view === "prices" ? (
                 <PriceBoard
                   onBack={() => navigate("home")}
-                  recyclerMode
                   onToast={setToast}
                 />
               ) : view === "create" ? (
@@ -1715,10 +1756,25 @@ function CreateLot({
   onToast: (message: string) => void;
 }) {
   const [step, setStep] = useState(1);
-  const { t: copy } = useI18n();
+  const { t: copy, language } = useI18n();
   const fileInput = useRef<HTMLInputElement>(null);
   const activeCategory =
     categories.find(item => item.name === draft.category) ?? categories[0];
+  const hasWorkbookBenchmark = Object.prototype.hasOwnProperty.call(
+    createLotBenchmarkRates,
+    draft.category
+  );
+  const benchmarkRateLabel = hasWorkbookBenchmark
+    ? language === "हिंदी"
+      ? "वर्कबुक बेंचमार्क मध्यबिंदु"
+      : language === "मराठी"
+        ? "वर्कबुक बेंचमार्क मध्यबिंदू"
+        : "Workbook benchmark midpoint"
+    : language === "हिंदी"
+      ? "डेमो दर · वर्कबुक में मेल खाता ग्रेड नहीं"
+      : language === "मराठी"
+        ? "डेमो दर · वर्कबुकमध्ये जुळणारा ग्रेड नाही"
+        : "Demo rate · no matching workbook grade";
   const estimate = getIndicativeValue(draft.weight, activeCategory.rate);
   const low = Math.round(estimate * 0.92);
   const high = Math.round(estimate * 1.08);
@@ -2009,14 +2065,25 @@ function CreateLot({
               <span>
                 {draft.weight.toFixed(1)} kg · {draft.category}
               </span>
-              <span>Local rate · ₹{activeCategory.rate}/kg</span>
+              <span>
+                {benchmarkRateLabel} · ₹{activeCategory.rate}/kg
+              </span>
             </div>
             <div className="estimate-rule" />
             <div className="estimate-explain">
               <CircleDollarSign size={17} />
               <span>
-                Based on recent local observations. Final value is confirmed at
-                handover.
+                {hasWorkbookBenchmark
+                  ? language === "हिंदी"
+                    ? "वर्कबुक बेंचमार्क दर पर आधारित। अंतिम कीमत हैंडओवर पर तय होगी।"
+                    : language === "मराठी"
+                      ? "वर्कबुक बेंचमार्क दरावर आधारित. अंतिम किंमत हँडओव्हरवेळी ठरेल."
+                      : "Based on the workbook benchmark rate. Final value is confirmed at handover."
+                  : language === "हिंदी"
+                    ? "इस ग्रेड का वर्कबुक बेंचमार्क उपलब्ध नहीं है; यह डेमो अनुमान है। अंतिम कीमत हैंडओवर पर तय होगी।"
+                    : language === "मराठी"
+                      ? "या ग्रेडसाठी वर्कबुक बेंचमार्क नाही; हा डेमो अंदाज आहे. अंतिम किंमत हँडओव्हरवेळी ठरेल."
+                      : "No workbook benchmark matches this grade; this is a demo estimate. Confirm the final value at handover."}
               </span>
             </div>
             <button className="primary-button wide" onClick={onContinue}>
@@ -2546,22 +2613,33 @@ function OfferInbox({
 
 function PriceBoard({
   onBack,
-  recyclerMode = false,
   onToast,
 }: {
   onBack: () => void;
-  recyclerMode?: boolean;
   onToast?: (message: string) => void;
 }) {
   const { language } = useI18n();
   const c = pageCopy[language];
-  const [updatedAt, setUpdatedAt] = useState("Updated today · Pimpri, Pune");
-  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState(c.updated);
+  const [activePriceTab, setActivePriceTab] = useState<"national" | "state">(
+    "national"
+  );
+  const [selectedState, setSelectedState] = useState(
+    defaultStatePriceBenchmark
+  );
+  const selectedStateBenchmark =
+    statePriceBenchmarks.find(item => item.state === selectedState) ??
+    statePriceBenchmarks[0];
+  const stateRates = [
+    { name: "Iron HMS", range: selectedStateBenchmark.ironHms },
+    { name: "Copper", range: selectedStateBenchmark.copper },
+    { name: "Aluminium", range: selectedStateBenchmark.aluminium },
+    { name: "PET Plastic", range: selectedStateBenchmark.petPlastic },
+    { name: "Carton (OCC)", range: selectedStateBenchmark.cartonOcc },
+  ];
   const refreshPrices = () => {
-    setUpdatedAt(
-      `Updated just now · ${recyclerMode ? "Recycler desk" : "Pimpri, Pune"}`
-    );
-    onToast?.("Price board refreshed with the latest local rates");
+    setUpdatedAt(c.updated);
+    onToast?.("Workbook price benchmarks loaded");
   };
   return (
     <div className="page-content prices-page">
@@ -2593,83 +2671,114 @@ function PriceBoard({
         </div>
         <div className="highlight-stat">
           <span>{c.median}</span>
-          <strong>₹280/kg</strong>
+          <strong>{statePriceBenchmarks.length} markets</strong>
           <ArrowUpRight size={15} />
         </div>
       </div>
-      <div className="price-table">
-        <div className="price-table-head">
-          <span>{c.material}</span>
-          <span>{c.range}</span>
-          <span>{c.trend}</span>
-          <span>{c.observed}</span>
-          <span />
-        </div>
-        {categories.map((item, index) => (
-          <div
-            className={
-              selectedMaterial === item.name
-                ? "price-row selected"
-                : "price-row"
-            }
-            key={item.name}
-            onClick={() => {
-              setSelectedMaterial(item.name);
-              onToast?.(
-                `${item.name} selected. Use this rate when applying an offer.`
-              );
-            }}
-            role="button"
-            tabIndex={0}
-            onKeyDown={event => {
-              if (event.key === "Enter" || event.key === " ") {
-                setSelectedMaterial(item.name);
-              }
-            }}
-          >
-            <div className="price-material">
-              <div className={`category-glyph mini ${item.color}`}>
-                {item.icon}
-              </div>
-              <div>
-                <strong>{item.name}</strong>
-                <span>{item.sub}</span>
-              </div>
-            </div>
-            <div className="price-range">
-              <strong>
-                ₹{Math.round(item.rate * 0.92)} to ₹
-                {Math.round(item.rate * 1.08)}
-              </strong>
-              <span>{c.indicative}</span>
-            </div>
-            <div className="trend">
-              <div className="spark-bars">
-                {[36, 44, 30, 48, 42, index % 2 ? 52 : 58].map((height, i) => (
-                  <span
-                    key={i}
-                    style={{ height: `${height}%` }}
-                    className={i === 5 ? "current" : ""}
-                  />
-                ))}
-              </div>
-              <span className={index === 1 ? "trend-down" : "trend-up"}>
-                {index === 1 ? (
-                  <ArrowDownRight size={13} />
-                ) : (
-                  <ArrowUpRight size={13} />
-                )}{" "}
-                {index === 1 ? "2.4%" : `${(index + 1) * 1.6}%`}
-              </span>
-            </div>
-            <div className="observed">
-              <span>{index < 2 ? c.today : c.yesterday}</span>
-              <small>{c.fieldQuote}</small>
-            </div>
-            <ChevronRight size={16} className="row-chevron" />
-          </div>
-        ))}
+      <div className="price-view-tabs" role="tablist">
+        <button
+          className={activePriceTab === "national" ? "active" : ""}
+          role="tab"
+          aria-selected={activePriceTab === "national"}
+          onClick={() => setActivePriceTab("national")}
+        >
+          {c.nationalTab}
+        </button>
+        <button
+          className={activePriceTab === "state" ? "active" : ""}
+          role="tab"
+          aria-selected={activePriceTab === "state"}
+          onClick={() => setActivePriceTab("state")}
+        >
+          {c.stateTab}
+        </button>
       </div>
+      {activePriceTab === "national" ? (
+        <div className="price-table benchmark-price-grid">
+          <div className="price-table-head">
+            <span>{c.category}</span>
+            <span>{c.material}</span>
+            <span>{c.range}</span>
+            <span>{c.endUser}</span>
+          </div>
+          {nationalPriceBenchmarks.map((item, index) => (
+            <div className="price-row" key={item.grade}>
+              <span className="benchmark-category">{item.category}</span>
+              <div className="price-material">
+                <div
+                  className={`category-glyph mini ${["mint", "amber", "blue", "violet", "slate"][index % 5]}`}
+                  aria-hidden="true"
+                >
+                  ₹
+                </div>
+                <div>
+                  <strong>{item.grade}</strong>
+                </div>
+              </div>
+              <div className="price-range">
+                <strong>
+                  ₹{formatRate(item.min)} – ₹{formatRate(item.max)}
+                </strong>
+                <span>₹/kg</span>
+              </div>
+              <span className="benchmark-end-user">{item.endUser}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="state-price-controls">
+            <label htmlFor="state-price-select">{c.selectedState}</label>
+            <select
+              id="state-price-select"
+              value={selectedState}
+              onChange={event => setSelectedState(event.target.value)}
+            >
+              {statePriceBenchmarks.map(item => (
+                <option key={item.state} value={item.state}>
+                  {item.state}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="regional-driver">
+            <strong>
+              {selectedStateBenchmark.state} · {c.marketDriver}
+            </strong>
+            <span>{selectedStateBenchmark.driver}</span>
+          </div>
+          <div className="price-table state-price-grid">
+            <div className="price-table-head">
+              <span>{c.material}</span>
+              <span>{c.range}</span>
+              <span>{c.calculatedMidpoint}</span>
+            </div>
+            {stateRates.map(item => (
+              <div className="price-row" key={item.name}>
+                <div className="price-material">
+                  <div className="category-glyph mini mint" aria-hidden="true">
+                    ₹
+                  </div>
+                  <div>
+                    <strong>{item.name}</strong>
+                  </div>
+                </div>
+                <div className="price-range">
+                  <strong>
+                    ₹{formatRate(item.range.min)} – ₹{formatRate(item.range.max)}
+                  </strong>
+                  <span>₹/kg</span>
+                </div>
+                <div className="price-range">
+                  <strong>₹{formatRate(getAverageRate(item.range))}</strong>
+                  <span>{c.referenceOnly}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      <p className="price-disclaimer">{c.priceDisclaimer}</p>
     </div>
   );
 }
